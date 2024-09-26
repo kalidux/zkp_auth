@@ -27,6 +27,16 @@ jobs:
         docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest -f server/Dockerfile .
         docker push ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
 
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
+
   build-client:
     name: Build Client Image
     runs-on: ubuntu-latest
@@ -47,6 +57,16 @@ jobs:
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest -f client/Dockerfile .
         docker push ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
 
   test-images:
     name: Test Server and Client Images
