@@ -53,11 +53,11 @@ jobs:
   test-images:
     name: Test Server and Client Images
     runs-on: ubuntu-latest
-    needs: [build-server, build-client]  # Ensure both images are built before testing
+    needs: [build-server, build-client]
     services:
       docker:
         image: docker:19.03.12
-        options: --privileged  # Allows for running Docker within Docker for testing
+        options: --privileged
 
     steps:
     - name: Checkout Code
@@ -72,9 +72,14 @@ jobs:
       run: |
         docker network inspect zkp_network || docker network create zkp_network
 
+    - name: Pull Server and Client Images
+      run: |
+        docker pull ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
+        docker pull ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+
     - name: Start Server and Client with Docker Compose
       run: |
-        # Start server using the server docker-compose file
+        # Use Docker Compose to start the pulled images
         cd server && docker-compose -f docker-compose-server.yml up -d
         sleep 30  # Wait for the server to be fully up and running
         cd ../client && docker-compose -f docker-compose-client.yml up --abort-on-container-exit
@@ -83,7 +88,6 @@ jobs:
       run: |
         # Check client logs to confirm the output is correct
         CLIENT_LOG=$(docker-compose -f client/docker-compose-client.yml logs client)
-        # Ensure the logs contain the expected SessionID output
         if echo "$CLIENT_LOG" | grep -q 'SessionID='; then
           echo "Client ran successfully with a valid session ID."
         else
