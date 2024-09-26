@@ -53,7 +53,7 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
+        cosign sign -y docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
 
   build-client:
     name: Build Client Image
@@ -102,7 +102,7 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+        cosign sign -y docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
 
   test-images:
     name: Test Server and Client Images
