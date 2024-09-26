@@ -8,10 +8,14 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 tonic = "0.9"
+
 prost = "0.11"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 num-bigint = { version = "0.4", features = ["rand"] }
 num-traits = "0.2.15"
+log = "0.4"
+env_logger = "0.10" 
+
 
 [build-dependencies]
 tonic-build = "0.9"

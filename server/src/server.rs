@@ -4,6 +4,7 @@ use num_traits::Zero;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use tonic::{transport::Server, Code, Request, Response, Status};
+use log::{info, error};  // Added for logging
 
 pub mod zkp_auth {
     include!("./zkp_auth.rs");
@@ -37,10 +38,12 @@ impl Auth for AuthImpl {
         &self,
         request: Request<RegisterRequest>,
     ) -> Result<Response<RegisterResponse>, Status> {
-        println!("Got a register request: ");
+        info!("Received a register request");
 
         let request = request.into_inner();
         let user_id = request.user;
+
+        info!("Registering user with ID: {}", user_id);
 
         let user_info = UserInfo {
             y1: deserialize(&request.y1),
@@ -52,9 +55,9 @@ impl Auth for AuthImpl {
         };
 
         let user_info_hashmap = &mut self.user_info.lock().unwrap();
-        user_info_hashmap.insert(user_id, user_info);
+        user_info_hashmap.insert(user_id.clone(), user_info);
 
-        println!("{:?}", user_info_hashmap);
+        info!("User info stored: {:?}", user_info_hashmap.get(&user_id));
 
         Ok(Response::new(RegisterResponse {}))
     }
@@ -63,15 +66,19 @@ impl Auth for AuthImpl {
         &self,
         request: Request<AuthenticationChallengeRequest>,
     ) -> Result<Response<AuthenticationChallengeResponse>, Status> {
-        println!("Got an Authentication Challenge request: ");
+        info!("Received an Authentication Challenge request");
 
         let request = request.into_inner();
         let user_id = request.user;
+
+        info!("Looking for user with ID: {}", user_id);
 
         let user_info_hashmap = &mut self.user_info.lock().unwrap();
         if let Some(user_info) = user_info_hashmap.get_mut(&user_id) {
             let auth_id = random_string(6);
             let c = random_number();
+
+            info!("Generated authentication challenge for user ID: {}. Auth ID: {}, Challenge: {:?}", user_id, auth_id, c);
 
             user_info.r1 = deserialize(&request.r1);
             user_info.r2 = deserialize(&request.r2);
@@ -80,11 +87,14 @@ impl Auth for AuthImpl {
             let auth_info_hashmap = &mut self.auth_info.lock().unwrap();
             auth_info_hashmap.insert(auth_id.clone(), user_id.clone());
 
+            info!("Auth info stored: {:?}", auth_info_hashmap.get(&auth_id));
+
             Ok(Response::new(AuthenticationChallengeResponse {
                 auth_id,
                 c: serialize(&c),
             }))
         } else {
+            error!("User ID: {} not found", user_id);
             Err(Status::new(
                 Code::NotFound,
                 format!("User {} not found", user_id),
@@ -96,10 +106,13 @@ impl Auth for AuthImpl {
         &self,
         request: Request<AuthenticationAnswerRequest>,
     ) -> Result<Response<AuthenticationAnswerResponse>, Status> {
-        println!("Got a Verification Request: ");
+        info!("Received a Verification Request");
 
         let request = request.into_inner();
         let auth_id = request.auth_id;
+
+        info!("Verifying auth ID: {}", auth_id);
+
         let auth_info_hashmap = &mut self.auth_info.lock().unwrap();
         let user_info_hashmap = &mut self.user_info.lock().unwrap();
 
@@ -111,6 +124,8 @@ impl Auth for AuthImpl {
                 let y1 = &user_info.y1;
                 let y2 = &user_info.y2;
                 let s = deserialize(&request.s);
+
+                info!("Verifying challenge for user ID: {}", user_id);
 
                 if verify(
                     &deserialize(P),
@@ -126,22 +141,25 @@ impl Auth for AuthImpl {
                     let session_id = random_string(6);
                     user_info.session_id = session_id.clone();
 
-                    println!("{:?}", user_info_hashmap);
+                    info!("Authentication successful for user ID: {}. Session ID: {}", user_id, session_id);
 
                     Ok(Response::new(AuthenticationAnswerResponse { session_id }))
                 } else {
+                    error!("Challenge not solved correctly for auth ID: {}", auth_id);
                     Err(Status::new(
                         Code::Unauthenticated,
                         "Challenge not solved correctly".to_string(),
                     ))
                 }
             } else {
+                error!("User ID: {} not found", user_id);
                 Err(Status::new(
                     Code::NotFound,
                     format!("User {} not found", user_id),
                 ))
             }
         } else {
+            error!("Auth ID: {} not found", auth_id);
             Err(Status::new(
                 Code::NotFound,
                 format!("Auth {} not found", auth_id),
@@ -152,8 +170,9 @@ impl Auth for AuthImpl {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Running server...");
-    let addr = "127.0.0.1:50051".parse()?;
+    env_logger::init();  // Initialize logging
+    info!("Running server...");
+    let addr = "0.0.0.0:50051".parse()?;
     let auth_impl = AuthImpl::default();
 
     Server::builder()

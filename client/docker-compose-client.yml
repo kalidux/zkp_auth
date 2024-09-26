@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  client:
+    image: zkp_client
+    container_name: zkp_client
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile 
+    networks:
+      - zkp_network
+
+networks:
+  zkp_network:
+    external: true  # Use the same network as the server

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  server:
+    image: zkp_server
+    container_name: zkp_server
+    ports:
+      - "50051:50051"
+    networks:
+      - zkp_network
+
+  client:
+    image: zkp_client
+    container_name: zkp_client
+    depends_on:
+      - server  # No condition needed, wait until server container starts
+    networks:
+      - zkp_network
+    entrypoint: ["sh", "-c", "sleep 10 && client"]  # Delay client start by 10 seconds
+
+networks:
+  zkp_network:
+    driver: bridge
