@@ -9,6 +9,12 @@ jobs:
   build-server:
     name: Build Server Image
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write  # Needed for signing the images with GitHub OIDC Token
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
@@ -40,10 +46,24 @@ jobs:
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
 
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3.6.0
+
+    - name: Sign Server Image with GitHub OIDC
+      env:
+        COSIGN_EXPERIMENTAL: "1"
+      run: |
+        cosign sign docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
 
   build-client:
     name: Build Client Image
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write  # Needed for signing the images with GitHub OIDC Token
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
@@ -74,6 +94,15 @@ jobs:
     - name: Push Client Image
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3.6.0
+
+    - name: Sign Client Image with GitHub OIDC
+      env:
+        COSIGN_EXPERIMENTAL: "1"
+      run: |
+        cosign sign docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
 
   test-images:
     name: Test Server and Client Images
