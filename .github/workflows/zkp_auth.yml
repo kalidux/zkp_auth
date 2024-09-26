@@ -82,7 +82,7 @@ jobs:
       run: |
         # Use Docker Compose to start the pulled images
         cd server && docker-compose -f docker-compose-server.yml up -d
-        sleep 30  # Wait for the server to be fully up and running
+        sleep 5  # Wait for the server to be fully up and running
         cd ../client && docker-compose -f docker-compose-client.yml up --abort-on-container-exit
 
     - name: Verify Client Output
