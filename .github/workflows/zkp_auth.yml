@@ -30,43 +30,42 @@ jobs:
 
     - name: Build Server Image
       run: |
-        docker build -t zkp_server:latest -f server/Dockerfile .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest -f server/Dockerfile .
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.20.0
       with:
-        image-ref: 'zkp_server:latest'  
+        image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest'
         format: 'table'
         exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH'
 
+    - name: Push Server Image
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
+
     - name: Get Server Image Digest
       id: server_digest
       run: |
-        SERVER_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' zkp_server:latest || true)
+        SERVER_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest)
         echo "SERVER_DIGEST=$SERVER_DIGEST" >> $GITHUB_ENV
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.6.0
 
-    - name: Sign Server Image with GitHub OIDC
+    - name: Sign Server Image with GitHub OIDC using Digest
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign -y zkp_server:latest
+        cosign sign -y docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server@${{ env.SERVER_DIGEST }}
 
-    - name: Verify Server Image Signature
+    - name: Verify Server Image Signature using Digest
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign verify zkp_server:latest
-
-    - name: Push Server Image
-      run: |
-        docker tag zkp_server:latest docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
-        docker push docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
+        cosign verify docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server@${{ env.SERVER_DIGEST }}
 
   build-client:
     name: Build Client Image
@@ -92,43 +91,42 @@ jobs:
 
     - name: Build Client Image
       run: |
-        docker build -t zkp_client:latest -f client/Dockerfile .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest -f client/Dockerfile .
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@0.20.0
       with:
-        image-ref: 'zkp_client:latest'  
+        image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest'
         format: 'table'
         exit-code: '1'
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH'
 
+    - name: Push Client Image
+      run: |
+        docker push ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+
     - name: Get Client Image Digest
       id: client_digest
       run: |
-        CLIENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' zkp_client:latest || true)
+        CLIENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest)
         echo "CLIENT_DIGEST=$CLIENT_DIGEST" >> $GITHUB_ENV
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.6.0
 
-    - name: Sign Client Image with GitHub OIDC
+    - name: Sign Client Image with GitHub OIDC using Digest
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign -y zkp_client:latest
+        cosign sign -y docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client@${{ env.CLIENT_DIGEST }}
 
-    - name: Verify Client Image Signature
+    - name: Verify Client Image Signature using Digest
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign verify zkp_client:latest
-
-    - name: Push Client Image
-      run: |
-        docker tag zkp_client:latest docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
-        docker push docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+        cosign verify docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client@${{ env.CLIENT_DIGEST }}
 
   test-images:
     name: Test Server and Client Images
