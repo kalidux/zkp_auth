@@ -59,13 +59,13 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign -y docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server@${{ env.SERVER_DIGEST }}
+        cosign sign -y ${{ env.SERVER_DIGEST }}
 
     - name: Verify Server Image Signature using Digest
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign verify docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server@${{ env.SERVER_DIGEST }}
+        cosign verify ${{ env.SERVER_DIGEST }}
 
   build-client:
     name: Build Client Image
@@ -120,13 +120,13 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign sign -y docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client@${{ env.CLIENT_DIGEST }}
+        cosign sign -y ${{ env.CLIENT_DIGEST }}
 
     - name: Verify Client Image Signature using Digest
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign verify docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client@${{ env.CLIENT_DIGEST }}
+        cosign verify ${{ env.CLIENT_DIGEST }}
 
   test-images:
     name: Test Server and Client Images
