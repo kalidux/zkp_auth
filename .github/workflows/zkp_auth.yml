@@ -65,8 +65,7 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign verify --certificate-identity "https://token.actions.githubusercontent.com" --certificate-oidc-issuer "https://token.actions.githubusercontent.com" docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server@${{ env.SERVER_DIGEST }}
-
+        cosign verify --certificate-identity "https://token.actions.githubusercontent.com" --certificate-oidc-issuer "https://token.actions.githubusercontent.com" ${{ env.SERVER_DIGEST }}
   build-client:
     name: Build Client Image
     runs-on: ubuntu-latest
@@ -126,7 +125,7 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: "1"
       run: |
-        cosign verify --certificate-identity "https://token.actions.githubusercontent.com" --certificate-oidc-issuer "https://token.actions.githubusercontent.com" docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client@${{ env.CLIENT_DIGEST }}
+        cosign verify --certificate-identity "https://token.actions.githubusercontent.com" --certificate-oidc-issuer "https://token.actions.githubusercontent.com" ${{ env.CLIENT_DIGEST }}
 
   test-images:
     name: Test Server and Client Images
