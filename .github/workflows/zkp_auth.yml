@@ -28,6 +28,14 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Install Protobuf Compiler
+      run: sudo apt-get install -y protobuf-compiler
+
     - name: Static Analysis with Clippy
       run: |
         cd server
@@ -92,6 +100,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+
+    - name: Install Protobuf Compiler
+      run: sudo apt-get install -y protobuf-compiler
 
     - name: Static Analysis with Clippy
       run: |
