@@ -1,8 +1,8 @@
+# docker-compose-client.yml
 version: '3.8'
-
 services:
   client:
-    image: ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+    image: "${DOCKER_USERNAME}/zkp_client:latest"
     container_name: zkp_client
     networks:
       - zkp_network

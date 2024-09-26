@@ -1,8 +1,8 @@
+# docker-compose-server.yml
 version: '3.8'
-
 services:
   server:
-    image: ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
+    image: "${DOCKER_USERNAME}/zkp_server:latest"
     container_name: zkp_server
     ports:
       - "50051:50051"
@@ -11,4 +11,4 @@ services:
 
 networks:
   zkp_network:
-    external: true
+    driver: bridge
