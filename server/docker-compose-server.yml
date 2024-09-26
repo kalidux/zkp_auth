@@ -2,11 +2,8 @@ version: '3.8'
 
 services:
   server:
-    image: zkp_server
+    image: ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
     container_name: zkp_server
-    build:
-      context: .
-      dockerfile: Dockerfile  # Build from the server Dockerfile
     ports:
       - "50051:50051"
     networks:
@@ -14,4 +11,4 @@ services:
 
 networks:
   zkp_network:
-    external: true 
+    external: true

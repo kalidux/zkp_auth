@@ -79,14 +79,12 @@ jobs:
 
     - name: Start Server and Client with Docker Compose
       run: |
-        # Use Docker Compose to start the pulled images
         cd server && docker-compose -f docker-compose-server.yml up -d
         sleep 30  # Wait for the server to be fully up and running
         cd ../client && docker-compose -f docker-compose-client.yml up --abort-on-container-exit
 
     - name: Verify Client Output
       run: |
-        # Check client logs to confirm the output is correct
         CLIENT_LOG=$(docker-compose -f client/docker-compose-client.yml logs client)
         if echo "$CLIENT_LOG" | grep -q 'SessionID='; then
           echo "Client ran successfully with a valid session ID."
