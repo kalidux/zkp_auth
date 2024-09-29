@@ -240,6 +240,7 @@ jobs:
     - name: Check terraform configuration
       run: |
         cd infrastructure/modules
+        terraform init
         terraform fmt
         terraform validate
 
