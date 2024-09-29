@@ -248,17 +248,6 @@ jobs:
       run: |
         cd infrastructure/dev
         terragrunt apply --auto-approve 
-
-    - name: Install terraform-docs
-      run: |
-        curl -L https://github.com/terraform-docs/terraform-docs/releases/download/v0.16.0/terraform-docs-v0.19.0-linux-amd64.tar.gz -o terraform-docs.tar.gz
-        tar -xzf terraform-docs.tar.gz
-        sudo mv terraform-docs /usr/local/bin/
-  
-    - name: Generate Terraform Documentation
-      run: |
-        cd infrastructure/modules
-        terraform-docs markdown table . > README.md
   
     - name: Destroy infrastructure
       run: |
