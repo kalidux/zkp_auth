@@ -39,12 +39,12 @@ jobs:
     - name: Static Analysis with Clippy
       run: |
         cd server
-        cargo clippy || true
+        cargo clippy || true # Continue even if clippy fails
 
     - name: Security Vulnerability Check with cargo-audit
       run: |
         cd server
-        cargo audit || true
+        cargo audit || true # Continue even if cargo-audit fails     
 
     - name: Build Server Image
       run: |
