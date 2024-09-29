@@ -205,7 +205,7 @@ jobs:
         cd client && docker-compose -f docker-compose-client.yml down
         cd ../server && docker-compose -f docker-compose-server.yml down
 
-  deploy-infra:
+  deploy-on-aws:
     name: Deploy Infrastructure to AWS
     runs-on: ubuntu-latest
     needs: [test-images]  # Deploy only after testing is complete
@@ -231,3 +231,12 @@ jobs:
         curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v0.67.14/terragrunt_linux_amd64 -o terragrunt
         chmod +x terragrunt
         sudo mv terragrunt /usr/local/bin/
+
+    - name: Install Terragrunt
+      run: |
+        cd infrastructure/dev
+        terragrunt init
+        terragrunt apply --auto-approve 
+
+
+
