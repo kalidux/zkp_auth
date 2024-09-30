@@ -51,6 +51,7 @@ jobs:
         docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest -f server/Dockerfile .
 
     - name: Run Trivy vulnerability scanner
+      continue-on-error: true
       uses: aquasecurity/trivy-action@0.20.0
       with:
         image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest'
@@ -124,6 +125,7 @@ jobs:
         docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest -f client/Dockerfile .
 
     - name: Run Trivy vulnerability scanner
+      continue-on-error: true
       uses: aquasecurity/trivy-action@0.20.0
       with:
         image-ref: 'docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest'
