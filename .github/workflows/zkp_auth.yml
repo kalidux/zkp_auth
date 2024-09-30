@@ -239,7 +239,7 @@ jobs:
 
     - name: Check terraform configuration
       run: |
-        cd infrastructure/modules
+        cd infrastructure/modules/chaum-pederson-zkp
         terraform init
         terraform fmt
         terraform validate

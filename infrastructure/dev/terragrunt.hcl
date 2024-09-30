@@ -1,5 +1,5 @@
 terraform {
-  source = "../modules"
+  source = "../chaum-pederson-zkp/modules"
 }
 
 inputs = {
