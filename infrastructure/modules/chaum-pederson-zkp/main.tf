@@ -241,9 +241,9 @@ resource "aws_instance" "rust_client" {
                   networks:
                     zkp_network:
                       aliases:
-                        - zkp_server  # Creates an alias zkp_server for the server's public IP
+                        - zkp-server  # Creates an alias zkp-server for the server's public IP
                   extra_hosts:
-                    - "zkp_server:${aws_eip.server_eip.public_ip} "  # Adds the public IP as an alias because docker network does not support external DNS resolution
+                    - "zkp-server:${aws_eip.server_eip.public_ip} "  # Adds the public IP as an alias because docker network does not support external DNS resolution
 
               networks:
                 zkp_network:

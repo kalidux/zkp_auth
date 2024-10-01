@@ -15,8 +15,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting client...");
 
     // Connect to the server using the Docker container name
-    info!("Connecting to server at http://zkp_server:50051...");
-    let mut client = match AuthClient::connect("http://zkp_server:50051").await {
+    info!("Connecting to server at http://zkp-server:50051...");
+    let mut client = match AuthClient::connect("http://zkp-server:50051").await {
         Ok(client) => client,
         Err(e) => {
             error!("Failed to connect to server: {:?}", e);
