@@ -159,7 +159,7 @@ resource "aws_instance" "rust_server" {
               services:
                 server:
                   image: kalidux/zkp_server:latest
-                  container_name: zkp_server
+                  container_name: zkp-server
                   ports:
                     - "50051:50051"
                   networks:

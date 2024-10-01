@@ -3,7 +3,7 @@ version: '3.8'
 services:
   client:
     image: "${DOCKER_USERNAME}/zkp_client:latest"
-    container_name: zkp_client
+    container_name: zkp-client
     networks:
       - zkp_network
 

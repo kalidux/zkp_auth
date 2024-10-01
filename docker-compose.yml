@@ -3,7 +3,7 @@ version: '3.8'
 services:
   server:
     image: zkp_server
-    container_name: zkp_server
+    container_name: zkp-server
     ports:
       - "50051:50051"
     networks:
@@ -11,7 +11,7 @@ services:
 
   client:
     image: zkp_client
-    container_name: zkp_client
+    container_name: zkp-client
     depends_on:
       - server  # No condition needed, wait until server container starts
     networks:

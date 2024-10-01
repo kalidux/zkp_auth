@@ -3,7 +3,7 @@ version: '3.8'
 services:
   server:
     image: "${DOCKER_USERNAME}/zkp_server:latest"
-    container_name: zkp_server
+    container_name: zkp-server
     ports:
       - "50051:50051"
     networks:
