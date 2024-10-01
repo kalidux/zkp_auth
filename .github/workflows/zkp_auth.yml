@@ -255,3 +255,65 @@ jobs:
       run: |
         cd infrastructure/dev
         terragrunt destroy --auto-approve 
+
+  deploy-on-k3s:
+    name: Deploy on K3s
+    runs-on: ubuntu-latest
+    needs: [test-images]  # Ensure both images are tested before deploying
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install K3s
+        run: |
+          curl -sfL https://get.k3s.io | sh -
+
+      - name: Copy K3s kubeconfig to accessible location
+        run: |
+          sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
+          sudo chown $USER:$USER $HOME/k3s.yaml
+
+      - name: Set KUBECONFIG environment variable
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+        shell: bash
+
+      - name: Verify K3s installation
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl get nodes
+
+      - name: Deploy zkp-server
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl create deployment zkp-server --image=${{ secrets.DOCKER_USERNAME }}/zkp_server:latest --port=50051
+          kubectl wait --for=condition=available --timeout=120s deployment/zkp-server
+          kubectl get pod -l app=zkp-server
+
+      - name: Expose zkp-server service with the name 'zkp-server'
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl expose deployment zkp-server --port=50051 --target-port=50051 --name=zkp-server --type=ClusterIP
+          kubectl get svc zkp-server
+
+      - name: Deploy zkp-client
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl create deployment zkp-client --image=${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+          kubectl wait --for=condition=available --timeout=120s deployment/zkp-client
+          kubectl get pods -l app=zkp-client
+
+      - name: Set environment variable for zkp-client to connect to zkp-server
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl set env deployment/zkp-client ZKP_SERVER_HOST=zkp-server
+
+      - name: Restart zkp-client pod to apply new environment variable
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl rollout restart deployment/zkp-client
+
+      - name: Check zkp-client logs
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl logs deployment/zkp-client
