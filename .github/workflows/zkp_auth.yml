@@ -1,4 +1,4 @@
-name: zkp auth test
+name: zkp auth
 
 on:
   push:
@@ -40,16 +40,13 @@ jobs:
       run: |
         cd server
         cargo clippy || true # Continue even if clippy fails
-
     - name: Security Vulnerability Check with cargo-audit
       run: |
         cd server
         cargo audit || true # Continue even if cargo-audit fails     
-
     - name: Build Server Image
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest -f server/Dockerfile .
-
     - name: Run Trivy vulnerability scanner
       continue-on-error: true
       uses: aquasecurity/trivy-action@0.20.0
@@ -64,13 +61,11 @@ jobs:
     - name: Push Server Image
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
-
     - name: Get Server Image Digest
       id: server_digest
       run: |
         SERVER_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_server:latest)
         echo "SERVER_DIGEST=$SERVER_DIGEST" >> $GITHUB_ENV
-
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.6.0
 
@@ -79,7 +74,6 @@ jobs:
         COSIGN_EXPERIMENTAL: "1"
       run: |
         cosign sign -y ${{ env.SERVER_DIGEST }}
-
   build-client:
     name: Build Client Image
     runs-on: ubuntu-latest
@@ -114,16 +108,13 @@ jobs:
       run: |
         cd client
         cargo clippy || true
-
     - name: Security Vulnerability Check with cargo-audit
       run: |
         cd client
         cargo audit || true
-
     - name: Build Client Image
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest -f client/Dockerfile .
-
     - name: Run Trivy vulnerability scanner
       continue-on-error: true
       uses: aquasecurity/trivy-action@0.20.0
@@ -138,13 +129,11 @@ jobs:
     - name: Push Client Image
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
-
     - name: Get Client Image Digest
       id: client_digest
       run: |
         CLIENT_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' docker.io/${{ secrets.DOCKER_USERNAME }}/zkp_client:latest)
         echo "CLIENT_DIGEST=$CLIENT_DIGEST" >> $GITHUB_ENV
-
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.6.0
 
@@ -153,7 +142,6 @@ jobs:
         COSIGN_EXPERIMENTAL: "1"
       run: |
         cosign sign -y ${{ env.CLIENT_DIGEST }}
-
   test-images:
     name: Test Server and Client Images
     runs-on: ubuntu-latest
@@ -171,26 +159,22 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y docker-compose
-
     - name: Set DOCKER_USERNAME environment variable
       run: echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}" >> $GITHUB_ENV
 
     - name: Create Docker Network
       run: |
         docker network inspect zkp_network || docker network create zkp_network
-
     - name: Pull Server and Client Images
       run: |
         docker pull ${{ secrets.DOCKER_USERNAME }}/zkp_server:latest
         docker pull ${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
-
     - name: Start Server and Client with Docker Compose
       run: |
         # Use Docker Compose to start the pulled images
         cd server && docker-compose -f docker-compose-server.yml up -d
         sleep 5  # Wait for the server to be fully up and running
         cd ../client && docker-compose -f docker-compose-client.yml up --abort-on-container-exit
-
     - name: Verify Client Output
       run: |
         # Check client logs to confirm the output is correct
@@ -201,12 +185,10 @@ jobs:
           echo "Client test failed, no valid session ID found."
           exit 1
         fi
-
     - name: Tear down Docker Compose
       run: |
         cd client && docker-compose -f docker-compose-client.yml down
         cd ../server && docker-compose -f docker-compose-server.yml down
-
   deploy-on-aws:
     name: Deploy on AWS
     runs-on: ubuntu-latest
@@ -233,19 +215,16 @@ jobs:
         curl -L https://github.com/gruntwork-io/terragrunt/releases/download/v0.67.14/terragrunt_linux_amd64 -o terragrunt
         chmod +x terragrunt
         sudo mv terragrunt /usr/local/bin/
-
     - name: Initialize Terragrunt
       run: |
         cd infrastructure/dev
         terragrunt init
-
     - name: Check terraform configuration
       run: |
         cd infrastructure/modules/chaum-pederson-zkp
         terraform init
         terraform fmt
         terraform validate
-
     - name: Deploy client and server using IaC
       run: |
         cd infrastructure/dev
@@ -255,65 +234,56 @@ jobs:
       run: |
         cd infrastructure/dev
         terragrunt destroy --auto-approve 
-
   deploy-on-k3s:
     name: Deploy on K3s
     runs-on: ubuntu-latest
     needs: [test-images]  # Ensure both images are tested before deploying
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Install K3s
-      run: |
-        curl -sfL https://get.k3s.io | sh -
+      - name: Install K3s
+        run: |
+          curl -sfL https://get.k3s.io | sh -
+      - name: Copy K3s kubeconfig to accessible location
+        run: |
+          sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
+          sudo chown $USER:$USER $HOME/k3s.yaml
+      - name: Set KUBECONFIG environment variable
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+        shell: bash
 
-    - name: Copy K3s kubeconfig to accessible location
-      run: |
-        sudo cp /etc/rancher/k3s/k3s.yaml $HOME/k3s.yaml
-        sudo chown $USER:$USER $HOME/k3s.yaml
-
-    - name: Set KUBECONFIG environment variable
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-      shell: bash
-
-    - name: Verify K3s installation
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl get nodes
-
-    - name: Create and apply zkp-server deployment
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl create deployment zkp-server --image=${{ secrets.DOCKER_USERNAME }}/zkp_server:latest --port=50051 -o yaml | kubectl apply -f -
-        kubectl wait --for=condition=available --timeout=300s deployment/zkp-server
-        kubectl get pod -l app=zkp-server
-
-    - name: Expose zkp-server service and apply
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl expose deployment zkp-server --port=50051 --target-port=50051 --name=zkp-server --type=ClusterIP -o yaml | kubectl apply -f -
-        kubectl get svc zkp-server
-
-    - name: Create and apply zkp-client deployment
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl create deployment zkp-client --image=${{ secrets.DOCKER_USERNAME }}/zkp_client:latest -o yaml | kubectl apply -f -
-        kubectl wait --for=condition=available --timeout=300s deployment/zkp-client
-        kubectl get pods -l app=zkp-client
-
-    - name: Set environment variable for zkp-client to connect to zkp-server
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl set env deployment/zkp-client ZKP_SERVER_HOST=zkp-server
-
-    - name: Restart zkp-client pod to apply new environment variable
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl rollout restart deployment/zkp-client
-
-    - name: Check zkp-client logs
-      run: |
-        export KUBECONFIG=$HOME/k3s.yaml
-        kubectl logs deployment/zkp-client
+      - name: Verify K3s installation
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl get nodes
+      - name: Deploy zkp-server
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl create deployment zkp-server --image=${{ secrets.DOCKER_USERNAME }}/zkp_server:latest --port=50051
+          kubectl wait --for=condition=available --timeout=300s deployment/zkp-server
+          kubectl get pod -l app=zkp-server
+      - name: Expose zkp-server service with the name 'zkp-server'
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl expose deployment zkp-server --port=50051 --target-port=50051 --name=zkp-server --type=ClusterIP
+          kubectl get svc zkp-server
+      - name: Deploy zkp-client
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl create deployment zkp-client --image=${{ secrets.DOCKER_USERNAME }}/zkp_client:latest
+          kubectl wait --for=condition=available --timeout=300s deployment/zkp-client
+          kubectl get pods -l app=zkp-client
+      - name: Set environment variable for zkp-client to connect to zkp-server
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl set env deployment/zkp-client ZKP_SERVER_HOST=zkp-server
+      - name: Restart zkp-client pod to apply new environment variable
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl rollout restart deployment/zkp-client
+      - name: Check zkp-client logs
+        run: |
+          export KUBECONFIG=$HOME/k3s.yaml
+          kubectl logs deployment/zkp-client
