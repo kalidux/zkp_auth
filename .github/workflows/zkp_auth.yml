@@ -256,11 +256,11 @@ jobs:
         cd infrastructure/dev
         terragrunt destroy --auto-approve 
 
-deploy-on-k3s:
-  name: Deploy on K3s
-  runs-on: ubuntu-latest
-  needs: [test-images]  # Ensure both images are tested before deploying
-  steps:
+  deploy-on-k3s:
+    name: Deploy on K3s
+    runs-on: ubuntu-latest
+    needs: [test-images]  # Ensure both images are tested before deploying
+    steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
